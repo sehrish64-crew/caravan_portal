@@ -10,7 +10,6 @@ import {
   Gauge,
   Tag,
   AlertTriangle,
-  RotateCcw,
   FileText,
   AlertCircle,
   ShieldCheck,
@@ -23,7 +22,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createDefaultReportData } from '../lib/defaultReportData';
-import type { MOTRecord, Report, ReportData } from '../types';
+import type { Report, ReportData } from '../types';
 
 function getCurrencyDisplay(value: string) {
   const normalized = (value || '').trim().toLowerCase();
@@ -131,7 +130,7 @@ function GroupCard({ title, items }: { title: string; items: Array<[string, bool
       </div>
       <div className="grid pdf-grid-2 gap-3">
         {items.map(([label, value]) => (
-          <FeatureLine key={label} label={label} value={<BoolChip value={value} />} />
+          <FeatureLine key={`${title}-${label}`} label={label} value={<BoolChip value={value} />} />
         ))}
       </div>
     </div>
@@ -559,7 +558,7 @@ export function ReportPdfPage() {
                 ['Shower', data.shower],
                 ['Toilet', data.toilet],
               ].map(([label, value]) => (
-                <FeatureLine key={label} label={label} value={<BoolChip value={Boolean(value)} />} />
+                <FeatureLine key={String(label)} label={String(label)} value={<BoolChip value={Boolean(value)} />} />
               ))}
             </div>
           </section>

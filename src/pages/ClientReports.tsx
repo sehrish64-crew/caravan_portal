@@ -17,13 +17,13 @@ import {
 } from 'lucide-react';
 import type { Report, Brand } from '../types';
 
-function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 12000): Promise<T> {
-  return new Promise((resolve, reject) => {
+function withTimeout<T>(promise: Promise<T> | T, label: string, timeoutMs = 12000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => {
       reject(new Error(`${label} request timed out`));
     }, timeoutMs);
 
-    promise.then(
+    Promise.resolve(promise).then(
       (value) => {
         window.clearTimeout(timer);
         resolve(value);
@@ -39,7 +39,7 @@ function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 12000): 
 export function ClientReports() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reports, setReports] = useState<(Report & { brand?: Brand })[]>([]);
   const [filteredReports, setFilteredReports] = useState<(Report & { brand?: Brand })[]>([]);
@@ -62,17 +62,17 @@ export function ClientReports() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await withTimeout(
+      const result = await withTimeout(
         supabase
           .from('reports')
           .select('*, brand:brands(*)')
           .order('created_at', { ascending: false }),
         'reports'
-      );
+      ) as { data?: (Report & { brand?: Brand })[]; error?: unknown };
 
-      if (error) throw error;
-      setReports(data || []);
-      setFilteredReports(data || []);
+      if (result.error) throw result.error;
+      setReports(result.data || []);
+      setFilteredReports(result.data || []);
     } catch (error) {
       console.error('Error fetching reports:', error);
       setError('We could not load reports right now. Please refresh and try again.');
@@ -82,8 +82,12 @@ export function ClientReports() {
   };
 
   const fetchBrands = async () => {
-    const { data } = await supabase.from('brands').select('*').order('name');
-    setBrands(data || []);
+    const result = await supabase.from('brands').select('*').order('name') as { data?: Brand[]; error?: unknown };
+    if (result.error) {
+      console.error('Error fetching brands:', result.error);
+      return;
+    }
+    setBrands(result.data || []);
   };
 
   const filterReports = () => {

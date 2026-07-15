@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { createDefaultReportData } from '../lib/defaultReportData';
 import {
-  Save, Download, ArrowLeft, CheckCircle, Plus, Trash2, FileText,
+  Save, Download, ArrowLeft, CheckCircle, Trash2, FileText,
   AlertTriangle, RotateCcw, Tag, TrendingDown, AlertCircle, Car,
   ShieldCheck, Lock, Gauge, Cog, ClipboardList, Scale,
   Calendar, Info, CheckSquare, Fuel,
 } from 'lucide-react';
-import type { Report, ReportData, MOTRecord } from '../types';
+import type { Report, ReportData } from '../types';
 
 // ─── Inline Editable Text ────────────────────────────────────────────────────
 function E({
@@ -32,14 +32,6 @@ function E({
   );
 }
 
-
-function getCurrencyDisplay(value: string) {
-  const normalized = (value || '').trim().toLowerCase();
-  if (!normalized) return '';
-  if (['$', 'usd', 'us', 'dollar', 'dollars'].includes(normalized)) return '$';
-  if (['£', 'gbp', 'pound', 'pounds', 'sterling', 'uk'].includes(normalized)) return '£';
-  return value;
-}
 
 // Keep the currency input fully editable in the editor (don't normalize on render).
 function CurrencyField({ value, onChange, style }: { value: string; onChange: (v: string) => void; style?: React.CSSProperties }) {
@@ -270,11 +262,6 @@ export function ReportEditor() {
   const updateNumericField = (key: 'accidentsCount' | 'recallsCount' | 'titleRecordsCount' | 'junkSalvageCount' | 'totalLossCount' | 'problemChecksCount', value: string) => {
     if (!data) return;
     set(key, (Number(value) || 0) as never);
-  };
-
-  const updateMOT = (idx: number, key: keyof MOTRecord, value: string) => {
-    if (!data) return;
-    setData({ ...data, motHistory: data.motHistory.map((m, i) => i === idx ? { ...m, [key]: value } : m) });
   };
 
   if (loading || !report || !data) {

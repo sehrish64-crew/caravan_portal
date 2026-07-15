@@ -12,7 +12,6 @@ import {
   Hash,
   Calendar,
   Gauge,
-  MapPin,
 } from 'lucide-react';
 import type { Brand, ReportType, PackageType } from '../types';
 
@@ -50,7 +49,16 @@ export function NewReport() {
   }, [authLoading]);
 
   useEffect(() => {
-    if (selectedBrand && brands.length > 0) {
+    if (!selectedBrand) return;
+
+    if (selectedBrand === 'autoscanora') {
+      setBrandColor('#0F766E');
+      setBrandEmail('info@autoscanora.com');
+      setBrandWebsite('https://autoscanora.com');
+      return;
+    }
+
+    if (brands.length > 0) {
       const brand = brands.find((b) => b.id === selectedBrand);
       if (brand) {
         setBrandColor(brand.default_color);
@@ -83,23 +91,6 @@ export function NewReport() {
       setSelectedBrand('');
     } finally {
       setBrandsLoading(false);
-    }
-  };
-
-  const uploadLogoFile = async (file: File) => {
-    try {
-      const filePath = `logos/${Date.now()}_${file.name}`;
-      const bucket = 'brand-logos';
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file, { upsert: true });
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        return null;
-      }
-      const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-      return data?.publicUrl || null;
-    } catch (err) {
-      console.error('Upload failed', err);
-      return null;
     }
   };
 
@@ -137,13 +128,62 @@ export function NewReport() {
         return;
       }
 
-      const selectedBrandObj = brands.find((b) => b.id === selectedBrand);
-      if (!selectedBrandObj) {
-        setErrorMessage('Selected brand not found');
-        return;
+      let resolvedBrandId = '';
+      let brandName = 'Vehicle Inspector';
+
+      if (selectedBrand === 'autoscanora') {
+        const existingAutoBrand = brands.find((brand) =>
+          brand.name.toLowerCase() === 'autoscanora' || brand.slug.toLowerCase() === 'autoscanora'
+        );
+
+        if (existingAutoBrand) {
+          resolvedBrandId = existingAutoBrand.id;
+          brandName = existingAutoBrand.name;
+        } else {
+          const fallbackBrand = brands[0];
+          if (fallbackBrand) {
+            resolvedBrandId = fallbackBrand.id;
+            brandName = 'AutoScanOra';
+          } else {
+            const { data: createdBrand, error: brandError } = await supabase
+              .from('brands')
+              .insert({
+                name: 'AutoScanOra',
+                slug: 'autoscanora',
+                default_color: brandColor || '#0F766E',
+                email: brandEmail || 'info@autoscanora.com',
+                website: brandWebsite || 'https://autoscanora.com',
+              })
+              .select()
+              .single();
+
+            if (brandError) {
+              console.error('Brand creation error:', brandError);
+              setErrorMessage('Unable to prepare the selected brand. Please try another brand or refresh the page.');
+              return;
+            }
+
+            resolvedBrandId = createdBrand?.id || '';
+            brandName = createdBrand?.name || 'AutoScanOra';
+            if (createdBrand) {
+              setBrands((prev) => [...prev, createdBrand as Brand]);
+            }
+          }
+        }
+      } else {
+        const selectedBrandObj = brands.find((b) => b.id === selectedBrand);
+        if (!selectedBrandObj) {
+          setErrorMessage('Selected brand not found');
+          return;
+        }
+        resolvedBrandId = selectedBrandObj.id;
+        brandName = selectedBrandObj.name || 'Vehicle Inspector';
       }
 
-      const brandName = selectedBrandObj?.name || 'Vehicle Inspector';
+      if (!resolvedBrandId) {
+        setErrorMessage('Unable to resolve a valid brand ID');
+        return;
+      }
 
       // Create normal report
       const reportData = {
@@ -159,7 +199,7 @@ export function NewReport() {
         .from('reports')
         .insert({
           user_id: user.id,
-          brand_id: selectedBrand,
+          brand_id: resolvedBrandId,
           report_type: reportType,
           package_type: packageType,
           vin_number: reportType === 'VIN' ? vinNumber : null,
@@ -236,6 +276,7 @@ export function NewReport() {
                       ? 'No brands available'
                       : 'Select a brand'}
                 </option>
+                <option value="autoscanora">AutoScanOra</option>
                 {brands.map((brand) => (
                   <option key={brand.id} value={brand.id}>
                     {brand.name}

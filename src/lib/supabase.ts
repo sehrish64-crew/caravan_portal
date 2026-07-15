@@ -22,6 +22,9 @@ function createMissingEnvClient() {
     order() {
       return builder;
     },
+    limit() {
+      return builder;
+    },
     eq() {
       return builder;
     },
@@ -30,6 +33,15 @@ function createMissingEnvClient() {
     },
     then(onFulfilled: (value: typeof queryResult) => unknown, onRejected?: (reason: unknown) => unknown) {
       return Promise.resolve(queryResult).then(onFulfilled, onRejected);
+    },
+  };
+
+  const storage = {
+    from() {
+      return {
+        upload: async () => ({ error: new Error('Missing Supabase environment variables') }),
+        getPublicUrl: () => ({ data: { publicUrl: '' } }),
+      };
     },
   };
 
@@ -42,6 +54,7 @@ function createMissingEnvClient() {
       signUp: async () => ({ data: null, error: new Error('Missing Supabase environment variables') }),
       signOut: async () => ({ error: null }),
     },
+    storage,
     from() {
       return builder;
     },

@@ -20,13 +20,13 @@ interface DashboardStats {
   completedReports: number;
 }
 
-function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 12000): Promise<T> {
-  return new Promise((resolve, reject) => {
+function withTimeout<T>(promise: Promise<T> | T, label: string, timeoutMs = 12000): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => {
       reject(new Error(`${label} request timed out`));
     }, timeoutMs);
 
-    promise.then(
+    Promise.resolve(promise).then(
       (value) => {
         window.clearTimeout(timer);
         resolve(value);
@@ -41,7 +41,7 @@ function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 12000): 
 
 export function Dashboard() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recentReports, setRecentReports] = useState<(Report & { brand?: Brand })[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -73,25 +73,30 @@ export function Dashboard() {
         withTimeout(supabase.from('reports').select('status, created_at'), 'report stats'),
       ]);
 
-      if (brandsResult.error) throw brandsResult.error;
-      if (recentReportsResult.error) throw recentReportsResult.error;
-      if (allReportsResult.error) throw allReportsResult.error;
+      const brandsData = brandsResult as unknown as { data?: Brand[]; error?: unknown };
+      const recentReportsData = recentReportsResult as unknown as { data?: (Report & { brand?: Brand })[]; error?: unknown };
+      const allReportsData = allReportsResult as unknown as { data?: Array<Record<string, unknown>>; error?: unknown };
 
-      setBrands(brandsResult.data || []);
-      setRecentReports(recentReportsResult.data || []);
+      if (brandsData.error) throw brandsData.error;
+      if (recentReportsData.error) throw recentReportsData.error;
+      if (allReportsData.error) throw allReportsData.error;
 
-      const allReports = allReportsResult.data || [];
+      setBrands(brandsData.data || []);
+      setRecentReports(recentReportsData.data || []);
+
+      const allReports = (allReportsData.data || []) as Array<{ created_at?: unknown; status?: unknown }>;
       const now = new Date();
       const thisMonthCount = allReports.filter((r) => {
-        const date = new Date(r.created_at);
+        const createdAt = r.created_at;
+        const date = createdAt ? new Date(String(createdAt)) : new Date();
         return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
       }).length;
 
       setStats({
         totalReports: allReports.length,
         thisMonth: thisMonthCount,
-        draftReports: allReports.filter((r) => r.status === 'draft').length,
-        completedReports: allReports.filter((r) => r.status === 'completed').length,
+        draftReports: allReports.filter((r) => String(r.status || '') === 'draft').length,
+        completedReports: allReports.filter((r) => String(r.status || '') === 'completed').length,
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
