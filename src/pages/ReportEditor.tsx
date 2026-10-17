@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { createDefaultReportData } from '../lib/defaultReportData';
+import { getLocalReports, updateLocalReport } from '../lib/localReports';
 import {
   Save, Download, ArrowLeft, CheckCircle, Trash2, FileText,
   AlertTriangle, RotateCcw, Tag, TrendingDown, AlertCircle, Car,
@@ -210,15 +210,15 @@ export function ReportEditor() {
 
   const fetchReport = async () => {
     setLoading(true);
-    try {
-      const { data: row, error } = await supabase.from('reports').select('*, brand:brands(*)').eq('id', id).single();
-      if (error) throw error;
-      if (row) {
-        setReport(row);
-        const def = createDefaultReportData(row.make ?? undefined, row.model ?? undefined, row.year ?? undefined, row.mileage ?? undefined, row.plate_number ?? undefined, row.vin_number ?? undefined);
-        setData({ ...def, ...row.report_data });
-      }
-    } catch { navigate('/dashboard'); } finally { setLoading(false); }
+    const row = getLocalReports().find((savedReport) => savedReport.id === id);
+    if (row) {
+      setReport(row);
+      const def = createDefaultReportData(row.make ?? undefined, row.model ?? undefined, row.year ?? undefined, row.mileage ?? undefined, row.plate_number ?? undefined, row.vin_number ?? undefined);
+      setData({ ...def, ...row.report_data });
+    } else {
+      navigate('/dashboard');
+    }
+    setLoading(false);
   };
 
   const set = useCallback(<K extends keyof ReportData>(key: K, value: ReportData[K]) => {
@@ -238,22 +238,30 @@ export function ReportEditor() {
     return Boolean(data?.hiddenFields?.includes(key));
   }, [data?.hiddenFields]);
 
-  const handleSave = async (status?: 'draft' | 'completed') => {
-    if (!report || !data) return;
+  const handleSave = useCallback(async (status?: 'draft' | 'completed'): Promise<boolean> => {
+    if (!report || !data) return false;
     setSaving(true);
     try {
-      await supabase.from('reports').update({ report_data: data, status: status || report.status, vehicle_name: report.make && report.model ? `${report.make} ${report.model}` : null }).eq('id', report.id);
-      if (status) setReport({ ...report, status });
-    } catch (e) { console.error(e); } finally { setSaving(false); }
-  };
+      const updatedReport = updateLocalReport(report.id, {
+        report_data: data,
+        status: status || report.status,
+        vehicle_name: report.make && report.model ? `${report.make} ${report.model}` : null,
+      });
+      if (!updatedReport) throw new Error('Saved report was not found');
+      setReport(updatedReport);
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    } finally { setSaving(false); }
+  }, [data, report]);
 
-  const handleExportPDF = useCallback(() => {
+  const handleExportPDF = useCallback(async () => {
     const active = document.activeElement as HTMLElement | null;
     active?.blur();
-    window.requestAnimationFrame(() => {
-      window.print();
-    });
-  }, []);
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    if (await handleSave()) window.print();
+  }, [handleSave]);
 
   const editableText = (value: ReportData[keyof ReportData]) => {
     return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '';
@@ -305,8 +313,21 @@ export function ReportEditor() {
           }
 
           body * {
+            visibility: hidden !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+          }
+
+          .report-editor-document,
+          .report-editor-document * {
+            visibility: visible !important;
+          }
+
+          .report-editor-document {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
           }
 
           aside,

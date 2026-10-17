@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { getLocalReports } from '../lib/localReports';
 import {
   FileText,
   PlusCircle,
@@ -20,29 +19,7 @@ interface DashboardStats {
   completedReports: number;
 }
 
-function withTimeout<T>(promise: Promise<T> | T, label: string, timeoutMs = 12000): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error(`${label} request timed out`));
-    }, timeoutMs);
-
-    Promise.resolve(promise).then(
-      (value) => {
-        window.clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        window.clearTimeout(timer);
-        reject(error);
-      }
-    );
-  });
-}
-
 export function Dashboard() {
-  const { user } = useAuth();
-  const [, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [recentReports, setRecentReports] = useState<(Report & { brand?: Brand })[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -53,58 +30,22 @@ export function Dashboard() {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
+    const reports = getLocalReports().sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const now = new Date();
+    const thisMonthReports = reports.filter((report) => {
+      const date = new Date(report.created_at);
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    });
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [brandsResult, recentReportsResult, allReportsResult] = await Promise.all([
-        withTimeout(supabase.from('brands').select('*').order('name'), 'brands'),
-        withTimeout(
-          supabase.from('reports').select('*, brand:brands(*)').order('created_at', { ascending: false }).limit(5),
-          'recent reports'
-        ),
-        withTimeout(supabase.from('reports').select('status, created_at'), 'report stats'),
-      ]);
-
-      const brandsData = brandsResult as unknown as { data?: Brand[]; error?: unknown };
-      const recentReportsData = recentReportsResult as unknown as { data?: (Report & { brand?: Brand })[]; error?: unknown };
-      const allReportsData = allReportsResult as unknown as { data?: Array<Record<string, unknown>>; error?: unknown };
-
-      if (brandsData.error) throw brandsData.error;
-      if (recentReportsData.error) throw recentReportsData.error;
-      if (allReportsData.error) throw allReportsData.error;
-
-      setBrands(brandsData.data || []);
-      setRecentReports(recentReportsData.data || []);
-
-      const allReports = (allReportsData.data || []) as Array<{ created_at?: unknown; status?: unknown }>;
-      const now = new Date();
-      const thisMonthCount = allReports.filter((r) => {
-        const createdAt = r.created_at;
-        const date = createdAt ? new Date(String(createdAt)) : new Date();
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      }).length;
-
-      setStats({
-        totalReports: allReports.length,
-        thisMonth: thisMonthCount,
-        draftReports: allReports.filter((r) => String(r.status || '') === 'draft').length,
-        completedReports: allReports.filter((r) => String(r.status || '') === 'completed').length,
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setError('We could not load the dashboard data right now. Please refresh and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setRecentReports(reports.slice(0, 5));
+    setBrands(Array.from(new Map(reports.map((report) => [report.brand_id, report.brand!])).values()));
+    setStats({
+      totalReports: reports.length,
+      thisMonth: thisMonthReports.length,
+      draftReports: reports.filter((report) => report.status === 'draft').length,
+      completedReports: reports.filter((report) => report.status === 'completed').length,
+    });
+  }, []);
 
   const statCards = [
     {
@@ -139,12 +80,6 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {error && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {error}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

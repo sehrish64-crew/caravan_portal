@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { createDefaultReportData } from '../lib/defaultReportData';
+import { saveLocalReport } from '../lib/localReports';
 import {
   ArrowRight,
   Car,
@@ -13,21 +13,18 @@ import {
   Calendar,
   Gauge,
 } from 'lucide-react';
-import type { Brand, ReportType, PackageType } from '../types';
+import type { Brand, Report, ReportType, PackageType } from '../types';
 
 export function NewReport() {
   const navigate = useNavigate();
-  const { loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [brandsLoading, setBrandsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Form fields
-  const [selectedBrand, setSelectedBrand] = useState<string>('');
-  const [brandColor, setBrandColor] = useState('#3B82F6');
-  const [brandEmail, setBrandEmail] = useState('info@example.com');
-  const [brandWebsite, setBrandWebsite] = useState('https://example.com/');
+  const [selectedBrand, setSelectedBrand] = useState('autoscanora');
+  const [brandColor, setBrandColor] = useState('#0F766E');
+  const [brandEmail, setBrandEmail] = useState('info@autoscanora.com');
+  const [brandWebsite, setBrandWebsite] = useState('https://autoscanora.com');
   const [reportType, setReportType] = useState<ReportType>('VIN');
   const [packageType, setPackageType] = useState<PackageType>('Standard');
   const [logoUrl, setLogoUrl] = useState<string>('');
@@ -42,58 +39,6 @@ export function NewReport() {
   const [mileage, setMileage] = useState('');
   const [marketValue, setMarketValue] = useState('');
 
-  useEffect(() => {
-    if (!authLoading) {
-      fetchBrands();
-    }
-  }, [authLoading]);
-
-  useEffect(() => {
-    if (!selectedBrand) return;
-
-    if (selectedBrand === 'autoscanora') {
-      setBrandColor('#0F766E');
-      setBrandEmail('info@autoscanora.com');
-      setBrandWebsite('https://autoscanora.com');
-      return;
-    }
-
-    if (brands.length > 0) {
-      const brand = brands.find((b) => b.id === selectedBrand);
-      if (brand) {
-        setBrandColor(brand.default_color);
-        setBrandEmail(brand.email || 'info@example.com');
-        setBrandWebsite(brand.website || 'https://example.com/');
-      }
-    }
-  }, [selectedBrand, brands]);
-
-  const fetchBrands = async () => {
-    setBrandsLoading(true);
-    try {
-      const { data, error } = await supabase.from('brands').select('*').order('name');
-      if (error) throw error;
-
-      const brandList = data || [];
-      setBrands(brandList);
-
-      if (brandList.length > 0) {
-        setSelectedBrand(brandList[0].id);
-        setBrandColor(brandList[0].default_color);
-        setBrandEmail(brandList[0].email || 'info@example.com');
-        setBrandWebsite(brandList[0].website || 'https://example.com/');
-      } else {
-        setSelectedBrand('');
-      }
-    } catch (error) {
-      console.error('Error fetching brands:', error);
-      setBrands([]);
-      setSelectedBrand('');
-    } finally {
-      setBrandsLoading(false);
-    }
-  };
-
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -106,7 +51,7 @@ export function NewReport() {
     }
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!selectedBrand) {
       setErrorMessage('Please select a brand');
       return;
@@ -117,76 +62,23 @@ export function NewReport() {
       return;
     }
 
-    setLoading(true);
     setErrorMessage('');
+    setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setErrorMessage('You must be logged in');
-        return;
-      }
-
-      let resolvedBrandId = '';
-      let brandName = 'Vehicle Inspector';
-
-      if (selectedBrand === 'autoscanora') {
-        const existingAutoBrand = brands.find((brand) =>
-          brand.name.toLowerCase() === 'autoscanora' || brand.slug.toLowerCase() === 'autoscanora'
-        );
-
-        if (existingAutoBrand) {
-          resolvedBrandId = existingAutoBrand.id;
-          brandName = existingAutoBrand.name;
-        } else {
-          const fallbackBrand = brands[0];
-          if (fallbackBrand) {
-            resolvedBrandId = fallbackBrand.id;
-            brandName = 'AutoScanOra';
-          } else {
-            const { data: createdBrand, error: brandError } = await supabase
-              .from('brands')
-              .insert({
-                name: 'AutoScanOra',
-                slug: 'autoscanora',
-                default_color: brandColor || '#0F766E',
-                email: brandEmail || 'info@autoscanora.com',
-                website: brandWebsite || 'https://autoscanora.com',
-              })
-              .select()
-              .single();
-
-            if (brandError) {
-              console.error('Brand creation error:', brandError);
-              setErrorMessage('Unable to prepare the selected brand. Please try another brand or refresh the page.');
-              return;
-            }
-
-            resolvedBrandId = createdBrand?.id || '';
-            brandName = createdBrand?.name || 'AutoScanOra';
-            if (createdBrand) {
-              setBrands((prev) => [...prev, createdBrand as Brand]);
-            }
-          }
-        }
-      } else {
-        const selectedBrandObj = brands.find((b) => b.id === selectedBrand);
-        if (!selectedBrandObj) {
-          setErrorMessage('Selected brand not found');
-          return;
-        }
-        resolvedBrandId = selectedBrandObj.id;
-        brandName = selectedBrandObj.name || 'Vehicle Inspector';
-      }
-
-      if (!resolvedBrandId) {
-        setErrorMessage('Unable to resolve a valid brand ID');
-        return;
-      }
-
-      // Create normal report
+      const brandName = 'AutoScanOra';
+      const now = new Date().toISOString();
+      const reportId = crypto.randomUUID();
+      const brand: Brand = {
+        id: selectedBrand,
+        name: brandName,
+        slug: 'autoscanora',
+        default_color: brandColor,
+        email: brandEmail,
+        website: brandWebsite,
+        created_at: now,
+      };
       const reportData = {
+        ...createDefaultReportData(make.trim(), model.trim(), year ? Number(year) : undefined, mileage ? Number(mileage) : undefined, reportType === 'Plate' ? plateNumber : undefined, reportType === 'VIN' ? vinNumber : undefined),
         securedBy: `Secured by ${brandName}`,
         tagline: 'One VIN. Complete History.',
         email: brandEmail,
@@ -194,37 +86,34 @@ export function NewReport() {
         marketValue: marketValue || '---',
         marketValueSummary: `Market value is estimated at ${marketValue || '---'} with a Clear / Valid MOT.`,
       };
-
-      const { data, error } = await supabase
-        .from('reports')
-        .insert({
-          user_id: user.id,
-          brand_id: resolvedBrandId,
-          report_type: reportType,
-          package_type: packageType,
-          vin_number: reportType === 'VIN' ? vinNumber : null,
-          plate_number: reportType === 'Plate' ? plateNumber : null,
-          make,
-          model,
-          year: year ? parseInt(year) : null,
-          mileage: mileage ? parseInt(mileage) : null,
-          brand_color: brandColor,
-          logo_url: logoUrl || null,
-          report_data: reportData,
-          vehicle_name: make && model ? `${make} ${model}` : null,
-          status: 'draft',
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Report creation error:', error);
-        throw new Error(error.message || 'Failed to create report');
-      }
-      navigate(`/dashboard/report/${data.id}`);
+      const report: Report = {
+        id: reportId,
+        user_id: 'local',
+        brand_id: brand.id,
+        brand,
+        report_type: reportType,
+        package_type: packageType,
+        vin_number: reportType === 'VIN' ? vinNumber || null : null,
+        plate_number: reportType === 'Plate' ? plateNumber || null : null,
+        make: make.trim(),
+        model: model.trim(),
+        year: year ? Number(year) : null,
+        mileage: mileage ? Number(mileage) : null,
+        brand_color: brandColor,
+        logo_url: logoUrl || null,
+        report_data: reportData,
+        client_name: null,
+        vehicle_name: `${make.trim()} ${model.trim()}`,
+        overall_score: null,
+        status: 'draft',
+        created_at: now,
+        updated_at: now,
+      };
+      saveLocalReport(report);
+      navigate(`/dashboard/report/${report.id}`);
     } catch (error) {
       console.error('Error creating report:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Failed to create report';
+      const errorMsg = error instanceof Error ? error.message : 'Could not save report on this device';
       setErrorMessage(errorMsg);
     } finally {
       setLoading(false);
@@ -266,22 +155,9 @@ export function NewReport() {
               <select
                 value={selectedBrand}
                 onChange={(e) => setSelectedBrand(e.target.value)}
-                disabled={brandsLoading || brands.length === 0}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="" disabled>
-                  {brandsLoading
-                    ? 'Loading brands...'
-                    : brands.length === 0
-                      ? 'No brands available'
-                      : 'Select a brand'}
-                </option>
                 <option value="autoscanora">AutoScanOra</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
               </select>
             </div>
 

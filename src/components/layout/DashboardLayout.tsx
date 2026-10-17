@@ -1,28 +1,19 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   Car,
   LayoutDashboard,
   FileText,
   PlusCircle,
-  LogOut,
   Moon,
   Sun,
   Menu,
 } from 'lucide-react';
 
 export function DashboardLayout() {
-  const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
-  };
 
   const navLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -93,21 +84,8 @@ export function DashboardLayout() {
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
 
-            {/* Sign Out */}
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              Sign Out
-            </button>
-
-            {/* User Info */}
             <div className="px-4 py-2">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Signed in as</p>
-              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                {user?.email}
-              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Saved on this device</p>
             </div>
           </div>
         </div>

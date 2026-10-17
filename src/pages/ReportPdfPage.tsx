@@ -20,7 +20,7 @@ import {
   ClipboardList,
   Scale,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { getLocalReports } from '../lib/localReports';
 import { createDefaultReportData } from '../lib/defaultReportData';
 import type { Report, ReportData } from '../types';
 
@@ -151,27 +151,22 @@ export function ReportPdfPage() {
     const fetchReport = async () => {
       if (!id) return;
       setLoading(true);
-      try {
-        const { data: row, error } = await supabase.from('reports').select('*, brand:brands(*)').eq('id', id).single();
-        if (error) throw error;
-        if (row) {
-          setReport(row);
-          const def = createDefaultReportData(
-            row.make ?? undefined,
-            row.model ?? undefined,
-            row.year ?? undefined,
-            row.mileage ?? undefined,
-            row.plate_number ?? undefined,
-            row.vin_number ?? undefined
-          );
-          setData({ ...def, ...row.report_data });
-        }
-      } catch (error) {
-        console.error(error);
+      const row = getLocalReports().find((savedReport) => savedReport.id === id);
+      if (row) {
+        setReport(row);
+        const def = createDefaultReportData(
+          row.make ?? undefined,
+          row.model ?? undefined,
+          row.year ?? undefined,
+          row.mileage ?? undefined,
+          row.plate_number ?? undefined,
+          row.vin_number ?? undefined
+        );
+        setData({ ...def, ...row.report_data });
+      } else {
         navigate('/dashboard');
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     void fetchReport();

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { deleteLocalReport, getLocalReports } from '../lib/localReports';
 import {
   Search,
   PlusCircle,
@@ -17,25 +17,6 @@ import {
 } from 'lucide-react';
 import type { Report, Brand } from '../types';
 
-function withTimeout<T>(promise: Promise<T> | T, label: string, timeoutMs = 12000): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error(`${label} request timed out`));
-    }, timeoutMs);
-
-    Promise.resolve(promise).then(
-      (value) => {
-        window.clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        window.clearTimeout(timer);
-        reject(error);
-      }
-    );
-  });
-}
-
 export function ClientReports() {
   const navigate = useNavigate();
 
@@ -51,7 +32,6 @@ export function ClientReports() {
 
   useEffect(() => {
     fetchReports();
-    fetchBrands();
   }, []);
 
   useEffect(() => {
@@ -61,33 +41,11 @@ export function ClientReports() {
   const fetchReports = async () => {
     setLoading(true);
     setError(null);
-    try {
-      const result = await withTimeout(
-        supabase
-          .from('reports')
-          .select('*, brand:brands(*)')
-          .order('created_at', { ascending: false }),
-        'reports'
-      ) as { data?: (Report & { brand?: Brand })[]; error?: unknown };
-
-      if (result.error) throw result.error;
-      setReports(result.data || []);
-      setFilteredReports(result.data || []);
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-      setError('We could not load reports right now. Please refresh and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchBrands = async () => {
-    const result = await supabase.from('brands').select('*').order('name') as { data?: Brand[]; error?: unknown };
-    if (result.error) {
-      console.error('Error fetching brands:', result.error);
-      return;
-    }
-    setBrands(result.data || []);
+    const savedReports = getLocalReports().sort((a, b) => b.created_at.localeCompare(a.created_at));
+    setReports(savedReports);
+    setFilteredReports(savedReports);
+    setBrands(Array.from(new Map(savedReports.map((report) => [report.brand_id, report.brand!])).values()));
+    setLoading(false);
   };
 
   const filterReports = () => {
@@ -115,14 +73,9 @@ export function ClientReports() {
   };
 
   const handleDelete = async (reportId: string) => {
-    try {
-      const { error } = await supabase.from('reports').delete().eq('id', reportId);
-      if (error) throw error;
-      setReports(reports.filter((r) => r.id !== reportId));
-      setDeleteConfirm(null);
-    } catch (error) {
-      console.error('Error deleting report:', error);
-    }
+    deleteLocalReport(reportId);
+    setReports((savedReports) => savedReports.filter((report) => report.id !== reportId));
+    setDeleteConfirm(null);
   };
 
   return (
@@ -279,7 +232,7 @@ export function ClientReports() {
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => navigate(`/dashboard/report/${report.id}?export=1`)}
+                          onClick={() => navigate(`/dashboard/report/${report.id}/pdf?download=1`)}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Download PDF (open editor)"
                         >
