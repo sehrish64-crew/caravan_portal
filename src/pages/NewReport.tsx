@@ -15,6 +15,18 @@ import {
 } from 'lucide-react';
 import type { Brand, Report, ReportType, PackageType } from '../types';
 
+const BRAND_PRESETS: Array<Pick<Brand, 'id' | 'name' | 'slug' | 'default_color' | 'email' | 'website'>> = [
+  { id: 'autoscanora', name: 'AutoScanOra', slug: 'autoscanora', default_color: '#0F766E', email: 'info@autoscanora.com', website: 'https://autoscanora.com' },
+  { id: 'carreaders', name: 'CarReaders', slug: 'carreaders', default_color: '#3B82F6', email: 'info@carreaders.com', website: 'https://carreaders.com/' },
+  { id: 'vehiclehealthanalysis', name: 'VehicleHealthAnalysis', slug: 'vehiclehealthanalysis', default_color: '#10B981', email: 'info@vehiclehealthanalysis.com', website: 'https://vehiclehealthanalysis.com/' },
+  { id: 'vehiclehealthestimate', name: 'VehicleHealthEstimate', slug: 'vehiclehealthestimate', default_color: '#F59E0B', email: 'info@vehiclehealthestimate.com', website: 'https://vehiclehealthestimate.com/' },
+  { id: 'carbronze', name: 'CarBronze', slug: 'carbronze', default_color: '#92400E', email: 'info@carbronze.com', website: 'https://carbronze.com/' },
+  { id: 'trueanalyzers', name: 'TrueAnalyzers', slug: 'trueanalyzers', default_color: '#8B5CF6', email: 'info@trueanalyzers.com', website: 'https://trueanalyzers.com/' },
+  { id: 'trueinspectify', name: 'TrueInspectify', slug: 'trueinspectify', default_color: '#EC4899', email: 'info@trueinspectify.com', website: 'https://trueinspectify.com/' },
+  { id: 'trueinfoprovider', name: 'TrueInfoProvider', slug: 'trueinfoprovider', default_color: '#06B6D4', email: 'info@trueinfoprovider.com', website: 'https://trueinfoprovider.com/' },
+  { id: 'cardefiner', name: 'CarDefiner', slug: 'cardefiner', default_color: '#EF4444', email: 'info@cardefiner.com', website: 'https://cardefiner.com/' },
+];
+
 export function NewReport() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -65,7 +77,8 @@ export function NewReport() {
     setErrorMessage('');
     setLoading(true);
     try {
-      const brandName = 'AutoScanOra';
+      const selectedBrandPreset = BRAND_PRESETS.find((brand) => brand.id === selectedBrand) ?? BRAND_PRESETS[0];
+      const brandName = selectedBrandPreset.name;
       const now = new Date().toISOString();
       const reportId = crypto.randomUUID();
       const brand: Brand = {
@@ -154,10 +167,19 @@ export function NewReport() {
               </label>
               <select
                 value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
+                onChange={(e) => {
+                  const brand = BRAND_PRESETS.find((preset) => preset.id === e.target.value);
+                  if (!brand) return;
+                  setSelectedBrand(brand.id);
+                  setBrandColor(brand.default_color);
+                  setBrandEmail(brand.email ?? '');
+                  setBrandWebsite(brand.website ?? '');
+                }}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="autoscanora">AutoScanOra</option>
+                {BRAND_PRESETS.map((brand) => (
+                  <option key={brand.id} value={brand.id}>{brand.name}</option>
+                ))}
               </select>
             </div>
 
