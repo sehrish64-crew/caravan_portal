@@ -16,15 +16,10 @@ import {
 import type { Brand, Report, ReportType, PackageType } from '../types';
 
 const BRAND_PRESETS: Array<Pick<Brand, 'id' | 'name' | 'slug' | 'default_color' | 'email' | 'website'>> = [
-  { id: 'autoscanora', name: 'AutoScanOra', slug: 'autoscanora', default_color: '#0F766E', email: 'info@autoscanora.com', website: 'https://autoscanora.com' },
-  { id: 'carreaders', name: 'CarReaders', slug: 'carreaders', default_color: '#3B82F6', email: 'info@carreaders.com', website: 'https://carreaders.com/' },
-  { id: 'vehiclehealthanalysis', name: 'VehicleHealthAnalysis', slug: 'vehiclehealthanalysis', default_color: '#10B981', email: 'info@vehiclehealthanalysis.com', website: 'https://vehiclehealthanalysis.com/' },
-  { id: 'vehiclehealthestimate', name: 'VehicleHealthEstimate', slug: 'vehiclehealthestimate', default_color: '#F59E0B', email: 'info@vehiclehealthestimate.com', website: 'https://vehiclehealthestimate.com/' },
-  { id: 'carbronze', name: 'CarBronze', slug: 'carbronze', default_color: '#92400E', email: 'info@carbronze.com', website: 'https://carbronze.com/' },
-  { id: 'trueanalyzers', name: 'TrueAnalyzers', slug: 'trueanalyzers', default_color: '#8B5CF6', email: 'info@trueanalyzers.com', website: 'https://trueanalyzers.com/' },
-  { id: 'trueinspectify', name: 'TrueInspectify', slug: 'trueinspectify', default_color: '#EC4899', email: 'info@trueinspectify.com', website: 'https://trueinspectify.com/' },
-  { id: 'trueinfoprovider', name: 'TrueInfoProvider', slug: 'trueinfoprovider', default_color: '#06B6D4', email: 'info@trueinfoprovider.com', website: 'https://trueinfoprovider.com/' },
-  { id: 'cardefiner', name: 'CarDefiner', slug: 'cardefiner', default_color: '#EF4444', email: 'info@cardefiner.com', website: 'https://cardefiner.com/' },
+  { id: 'checkmyvan', name: 'CheckMyVan', slug: 'checkmyvan', default_color: '#0F766E', email: '', website: '' },
+  { id: 'checkmyvehicles', name: 'CheckMyVehicles', slug: 'checkmyvehicles', default_color: '#3B82F6', email: '', website: '' },
+  { id: 'vehicleanalyse', name: 'VehicleAnalyse', slug: 'vehicleanalyse', default_color: '#10B981', email: '', website: '' },
+  { id: 'carintelcheck', name: 'CarIntelCheck', slug: 'carintelcheck', default_color: '#F59E0B', email: '', website: '' },
 ];
 
 export function NewReport() {
@@ -33,10 +28,10 @@ export function NewReport() {
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Form fields
-  const [selectedBrand, setSelectedBrand] = useState('autoscanora');
+  const [selectedBrand, setSelectedBrand] = useState('checkmyvan');
   const [brandColor, setBrandColor] = useState('#0F766E');
-  const [brandEmail, setBrandEmail] = useState('info@autoscanora.com');
-  const [brandWebsite, setBrandWebsite] = useState('https://autoscanora.com');
+  const [brandEmail, setBrandEmail] = useState('');
+  const [brandWebsite, setBrandWebsite] = useState('');
   const [reportType, setReportType] = useState<ReportType>('VIN');
   const [packageType, setPackageType] = useState<PackageType>('Standard');
   const [logoUrl, setLogoUrl] = useState<string>('');
@@ -84,7 +79,7 @@ export function NewReport() {
       const brand: Brand = {
         id: selectedBrand,
         name: brandName,
-        slug: 'autoscanora',
+        slug: selectedBrandPreset.slug,
         default_color: brandColor,
         email: brandEmail,
         website: brandWebsite,

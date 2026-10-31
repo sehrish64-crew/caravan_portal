@@ -14,14 +14,10 @@ CREATE TABLE brands (
 
 -- Insert default brands
 INSERT INTO brands (name, slug, default_color, email, website) VALUES
-  ('CarReaders', 'carreaders', '#3B82F6', 'info@carreaders.com', 'https://carreaders.com/'),
-  ('VehicleHealthAnalysis', 'vehiclehealthanalysis', '#10B981', 'info@vehiclehealthanalysis.com', 'https://vehiclehealthanalysis.com/'),
-  ('VehicleHealthEstimate', 'vehiclehealthestimate', '#F59E0B', 'info@vehiclehealthestimate.com', 'https://vehiclehealthestimate.com/'),
-  ('CarBronze', 'carbronze', '#92400E', 'info@carbronze.com', 'https://carbronze.com/'),
-  ('TrueAnalyzers', 'trueanalyzers', '#8B5CF6', 'info@trueanalyzers.com', 'https://trueanalyzers.com/'),
-  ('TrueInspectify', 'trueinspectify', '#EC4899', 'info@trueinspectify.com', 'https://trueinspectify.com/'),
-  ('TrueInfoProvider', 'trueinfoprovider', '#06B6D4', 'info@trueinfoprovider.com', 'https://trueinfoprovider.com/'),
-  ('CarDefiner', 'cardefiner', '#EF4444', 'info@cardefiner.com', 'https://cardefiner.com/');
+  ('CheckMyVan', 'checkmyvan', '#0F766E', NULL, NULL),
+  ('CheckMyVehicles', 'checkmyvehicles', '#3B82F6', NULL, NULL),
+  ('VehicleAnalyse', 'vehicleanalyse', '#10B981', NULL, NULL),
+  ('CarIntelCheck', 'carintelcheck', '#F59E0B', NULL, NULL);
 
 -- Create reports table
 CREATE TABLE reports (

@@ -4,6 +4,10 @@ ADD COLUMN IF NOT EXISTS website TEXT;
 
 UPDATE brands
 SET email = CASE name
+  WHEN 'CheckMyVan' THEN NULL
+  WHEN 'CheckMyVehicles' THEN NULL
+  WHEN 'VehicleAnalyse' THEN NULL
+  WHEN 'CarIntelCheck' THEN NULL
   WHEN 'CarReaders' THEN 'info@carreaders.com'
   WHEN 'VehicleHealthAnalysis' THEN 'info@vehiclehealthanalysis.com'
   WHEN 'VehicleHealthEstimate' THEN 'info@vehiclehealthestimate.com'
@@ -15,6 +19,10 @@ SET email = CASE name
   ELSE COALESCE(email, 'info@example.com')
 END,
 website = CASE name
+  WHEN 'CheckMyVan' THEN NULL
+  WHEN 'CheckMyVehicles' THEN NULL
+  WHEN 'VehicleAnalyse' THEN NULL
+  WHEN 'CarIntelCheck' THEN NULL
   WHEN 'CarReaders' THEN 'https://carreaders.com/'
   WHEN 'VehicleHealthAnalysis' THEN 'https://vehiclehealthanalysis.com/'
   WHEN 'VehicleHealthEstimate' THEN 'https://vehiclehealthestimate.com/'
