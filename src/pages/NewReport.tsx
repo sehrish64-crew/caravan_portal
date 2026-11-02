@@ -16,10 +16,11 @@ import {
 import type { Brand, Report, ReportType, PackageType } from '../types';
 
 const BRAND_PRESETS: Array<Pick<Brand, 'id' | 'name' | 'slug' | 'default_color' | 'email' | 'website'>> = [
-  { id: 'checkmyvan', name: 'CheckMyVan', slug: 'checkmyvan', default_color: '#0F766E', email: '', website: '' },
-  { id: 'checkmyvehicles', name: 'CheckMyVehicles', slug: 'checkmyvehicles', default_color: '#3B82F6', email: '', website: '' },
-  { id: 'vehicleanalyse', name: 'VehicleAnalyse', slug: 'vehicleanalyse', default_color: '#10B981', email: '', website: '' },
-  { id: 'carintelcheck', name: 'CarIntelCheck', slug: 'carintelcheck', default_color: '#F59E0B', email: '', website: '' },
+  { id: 'checkmyvan', name: 'CheckMyVan', slug: 'checkmyvan', default_color: '#0F766E', email: 'info@checkmyvan.com', website: 'https://checkmyvan.com/' },
+  { id: 'checkmyvehicles', name: 'CheckMyVehicles', slug: 'checkmyvehicles', default_color: '#3B82F6', email: 'info@checkmyvehicles.com', website: 'https://checkmyvehicles.com/' },
+  { id: 'vehicleanalyse', name: 'VehicleAnalyse', slug: 'vehicleanalyse', default_color: '#10B981', email: 'info@vehicleanalyse.com', website: 'https://vehicleanalyse.com/' },
+  { id: 'carintelcheck', name: 'CarIntelCheck', slug: 'carintelcheck', default_color: '#F59E0B', email: 'info@carintelcheck.com', website: 'https://carintelcheck.com/' },
+  { id: 'irishautoinsights', name: 'IrishAutoInsights', slug: 'irishautoinsights', default_color: '#8B5CF6', email: 'info@irishautoinsights.com', website: 'https://irishautoinsights.com/' },
 ];
 
 export function NewReport() {
