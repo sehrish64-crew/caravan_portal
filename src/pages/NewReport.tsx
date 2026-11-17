@@ -20,6 +20,7 @@ const BRAND_PRESETS: Array<Pick<Brand, 'id' | 'name' | 'slug' | 'default_color' 
   { id: 'checkmyvehicles', name: 'CheckMyVehicles', slug: 'checkmyvehicles', default_color: '#3B82F6', email: 'info@checkmyvehicles.com', website: 'https://checkmyvehicles.com/' },
   { id: 'vehicleanalyse', name: 'VehicleAnalyse', slug: 'vehicleanalyse', default_color: '#10B981', email: 'info@vehicleanalyse.com', website: 'https://vehicleanalyse.com/' },
   { id: 'carintelcheck', name: 'CarIntelCheck', slug: 'carintelcheck', default_color: '#F59E0B', email: 'info@carintelcheck.com', website: 'https://carintelcheck.com/' },
+  { id: 'vancheckers', name: 'VanCheckers', slug: 'vancheckers', default_color: '#0DA2E7', email: 'info@vancheckers.com', website: 'https://vancheckers.com/' },
   { id: 'irishautoinsights', name: 'IrishAutoInsights', slug: 'irishautoinsights', default_color: '#8B5CF6', email: 'info@irishautoinsights.com', website: 'https://irishautoinsights.com/' },
 ];
 
